@@ -70,9 +70,6 @@ export const jsx = (type: ElementType, config: any, ...children: any) => {
 };
 
 //开发环境--> 不处理 children 参数，并且会多一些额外检查
-// packages/react/src/jsx.ts
-// ...之前的代码
-
 export const jsxDEV = (type: ElementType, config: any) => {
 	let key: Key = null;
 	let ref: Ref = null;
