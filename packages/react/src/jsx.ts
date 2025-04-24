@@ -10,6 +10,7 @@ import {
 	ReactElementType,
 	ElementType
 } from 'shared/ReactTypes';
+//实现 ReactElement 数据结构
 const ReactElement = function (
 	type: Type,
 	key: Key,
