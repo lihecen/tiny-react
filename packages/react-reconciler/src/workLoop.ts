@@ -14,9 +14,12 @@
 //current Fiber 树中的 Fiber 节点被称为 current fiber, workInProgress Fiber 树中的 Fiber 节点被称为 workInProgress fiber
 //通过 alternate 属性来连接，即
 //currentFiber.alternate === workInProgressFiber | workInProgressFiber.alternate === currentFiber
-import { FiberNode } from './fiber';
+import { beginWork } from './beginWork';
+import { completeWork } from './completeWork';
+import { createWorkInProgress, FiberNode, FiberRootNode } from './fiber';
+import { HostRoot } from './workTags';
 let workInProgress: FiberNode | null = null;
-function renderRoot(root: FiberNode) {
+function renderRoot(root: FiberRootNode) {
 	prepareFreshStack(root);
 	//开始执行主循环
 	//如果中间某个节点处理有错误，打印警告，并把 workInProgress 清空，防止挂死
@@ -29,8 +32,8 @@ function renderRoot(root: FiberNode) {
 }
 //初始化 workInProgress 变量
 //直接把 workInProgress 设置成当前要渲染的 root 根节点
-function prepareFreshStack(root: FiberNode) {
-	workInProgress = root;
+function prepareFreshStack(root: FiberRootNode) {
+	workInProgress = createWorkInProgress(root.current, {});
 }
 //DFS
 //向下递归子节点
@@ -41,7 +44,7 @@ function workLoop() {
 }
 function performUnitOfWork(fiber: FiberNode) {
 	//比较并返回子 FiberNode
-	//开始工作
+	//开始工作 --> 负责构建表示更新的 Fiber 树
 	const next = beginWork(fiber);
 	//更新节点的新属性
 	fiber.memorizedProps = fiber.pendingProps;
@@ -57,7 +60,7 @@ function completeUnitOfWork(fiber: FiberNode) {
 	//从当前节点开始
 	let node: FiberNode | null = fiber;
 	do {
-		//生成更新计划
+		//生成更新计划 --> 将 Fiber 树映射到实际的 DOM 结构
 		completeWork(node);
 		//如果有兄弟节点，则遍历兄弟节点
 		const sibling = node.sibling;
@@ -71,7 +74,23 @@ function completeUnitOfWork(fiber: FiberNode) {
 		workInProgress = node;
 	} while (node !== null);
 }
-
+//调度功能
+export function scheduleUpdateOnFiber(fiber: FiberNode) {
+	const root = markUpdateFromFiberToRoot(fiber);
+	//渲染根节点
+	renderRoot(root);
+}
+//从当前的 fiber 节点开始，向上查找根节点，然后从根节点开始 render 流程
+function markUpdateFromFiberToRoot(fiber: FiberNode) {
+	let node = fiber;
+	while (node.return !== null) {
+		node = node.return;
+	}
+	if (node.tag === HostRoot) {
+		return node.stateNode;
+	}
+	return null;
+}
 //eg: 对于下面的组件，render 阶段会依次执行
 //function App() {
 //	return (
