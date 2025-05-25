@@ -16,7 +16,6 @@
 
 基于 react 的功能点，一点一点的拆分出来，循序渐进。
 
-
 ## Tasking
 
 - [√] 项目框架搭建
@@ -24,7 +23,7 @@
 - [√] 实现 Reconciler
 - [√] 实现更新机制
 - [√] 实现 Render 阶段
-- [×] 实现 Commit 阶段
+- [√] 实现 Commit 阶段
 - [×] 实现 ReactDOM
 - [×] 实现 useState
 - [×] 接入测试框架
@@ -35,4 +34,3 @@
 - [×] 实现同步调度流程
 - [×] 实现 useEffect
 - [×] 实现 Noop Renderer
-   
