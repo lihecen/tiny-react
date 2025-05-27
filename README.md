@@ -24,7 +24,7 @@
 - [√] 实现更新机制
 - [√] 实现 Render 阶段
 - [√] 实现 Commit 阶段
-- [×] 实现 ReactDOM
+- [√] 实现 ReactDOM
 - [×] 实现 useState
 - [×] 接入测试框架
 - [×] 实现单节点 update

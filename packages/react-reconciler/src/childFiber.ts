@@ -10,7 +10,7 @@
 //但此时是首次渲染，没有之前的子节点，所以主要是创建新的子节点链表
 import { ReactElementType } from 'shared/ReactTypes';
 import { FiberNode, createFiberFromElement } from './fiber';
-import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
+import { REACT_ELEMENT_TYPE } from '../../shared/ReactSymbols';
 import { HostText } from './workTags';
 import { Placement } from './fiberFlags';
 //根据参数 shouldTrackSideEffects 控制是否追踪副作用 (如 DOM 插入操作)

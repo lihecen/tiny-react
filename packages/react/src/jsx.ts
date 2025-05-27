@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 //生产环境
 //执行 jsx 方法和 React.createElement 方法的返回结果是 ReactElement 的数据结构
-import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
+import { REACT_ELEMENT_TYPE } from '../../shared/ReactSymbols';
 import {
 	Type,
 	Ref,
