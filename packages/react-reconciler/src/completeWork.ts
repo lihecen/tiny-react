@@ -13,11 +13,17 @@
 //收集更新 flags，根据 flags 的值，更新文本节点的内容
 import {
 	appendInitialChild,
+	Container,
 	createInstance,
 	createTextInstance
 } from 'hostConfig';
 import { FiberNode } from './fiber';
-import { HostComponent, HostRoot, HostText } from './workTags';
+import {
+	FunctionComponent,
+	HostComponent,
+	HostRoot,
+	HostText
+} from './workTags';
 import { NoFlags } from './fiberFlags';
 //生成更新计划，计算和收集更新 flags
 export const completeWork = (workInProgress: FiberNode) => {
@@ -25,7 +31,7 @@ export const completeWork = (workInProgress: FiberNode) => {
 	const current = workInProgress.alternate;
 	switch (workInProgress.tag) {
 		case HostRoot:
-			//对于根节点，只需要向上冒泡节点的副作用标记
+		case FunctionComponent:
 			bubbleProperties(workInProgress);
 			return null;
 		case HostComponent:
@@ -66,7 +72,7 @@ export const completeWork = (workInProgress: FiberNode) => {
 //先处理当前节点的所有子节点，再处理兄弟节点
 //如果为原生 DOM 元素节点或者文本节点，则将其添加到父节点中
 //如果是其他类型的组件节点并且有子节点，则递归处理子节点
-function appendAllChildren(parent: FiberNode, workInProgress: FiberNode) {
+function appendAllChildren(parent: Container, workInProgress: FiberNode) {
 	let node = workInProgress.child;
 	while (node !== null) {
 		if (node.tag === HostComponent || node.tag === HostText) {

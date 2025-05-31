@@ -17,7 +17,12 @@
 import { ReactElementType } from 'shared/ReactTypes';
 import { FiberNode } from './fiber';
 import { updateQueue, processUpdateQueue } from './updateQueue';
-import { HostComponent, HostRoot, HostText } from './workTags';
+import {
+	FunctionComponent,
+	HostComponent,
+	HostRoot,
+	HostText
+} from './workTags';
 import { reconcileChildFibers, mountChildFibers } from './childFiber';
 //比较并返回子 FiberNode
 export const beginWork = (workInProgress: FiberNode) => {
@@ -28,6 +33,9 @@ export const beginWork = (workInProgress: FiberNode) => {
 		case HostComponent:
 			//表示原生 DOM 元素
 			return updateHostComponent(workInProgress);
+		//表示函数组件
+		case FunctionComponent:
+			return updateFunctionComponent(workInProgress);
 		case HostText:
 			//表示文本节点
 			return updateHostText();
@@ -75,6 +83,36 @@ function updateHostComponent(workInProgress: FiberNode) {
 function updateHostText() {
 	//没有子节点，返回 null
 	return null;
+}
+
+//updateFunctionComponent函数会调用函数组件本身来获取其返回的 React 元素树
+//eg: function App() {
+//     return {
+//        123;
+//    }
+// }
+//只需要调用 App() 就可以得到其子节点，从而将子节点传给 reconcileChildren 协调处理子节点的更新逻辑
+//eg: function App() {
+//   const [count, setCount] = useState(0)
+//   return <div>{count}</div>
+//}
+//1: 首先会调用 renderWithHooks 执行 App() 得到 <div>{count}</div>
+//2: 将 JSX 转化为虚拟 DOM 节点
+//3: 调用 reconcileChildren 开始对比新旧 Fiber 树，准备生成新的 Fiber 子节点
+//4: 返回第一个子节点供调度器继续向下构建 Fiber 树
+function updateFunctionComponent(workInProgress: FiberNode) {
+	const nextChildren = renderWithHooks(workInProgress);
+	reconcileChildren(workInProgress, nextChildren);
+	return workInProgress.child;
+}
+//执行函数组件中的函数
+export function renderWithHooks(workInProgress: FiberNode) {
+	//保存在 type 字段中
+	const Component = workInProgress.type;
+	const props = workInProgress.pendingProps;
+	//执行函数
+	const children = Component(props);
+	return children;
 }
 
 //对比子节点的 current FiberNode 与子节点的 ReactElement

@@ -20,6 +20,7 @@
 //shared.pending 始终指向最后插入的 update ，而 shared.pending.next 则指向第一个插入的 update
 import { Action } from 'shared/ReactTypes';
 import { Update } from './fiberFlags';
+import { Dispatch } from 'react/src/currentDispatcher';
 //定义 update 数据结构
 export interface Update<State> {
 	action: Action<State>;
@@ -30,6 +31,7 @@ export interface updateQueue<State> {
 	shared: {
 		pending: Update<State> | null;
 	};
+	dispatch: Dispatch<State> | null;
 }
 //创建 update 实例
 export const createUpdate = <State>(action: Action<State>): Update<State> => {
@@ -43,7 +45,8 @@ export const createUpdateQueue = <State>(): updateQueue<State> => {
 	return {
 		shared: {
 			pending: null
-		}
+		},
+		dispatch: null
 	};
 };
 //将 update 添加到 updateQueue 中
