@@ -31,6 +31,7 @@ export class FiberNode {
 	memorizedState: any;
 	alternate: FiberNode | null;
 	flags: Flags;
+	deletions: Array<FiberNode> | null;
 	subtreeFlags: Flags;
 	updateQueue: unknown;
 	constructor(tag: workTag, pendingProps: Props, key: Key) {
@@ -66,6 +67,8 @@ export class FiberNode {
 		this.subtreeFlags = NoFlags;
 		//更新计划队列
 		this.updateQueue = null;
+		//指向待删除的子节点，用于在协调过程中进行删除
+		this.deletions = null;
 	}
 }
 

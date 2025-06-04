@@ -24,7 +24,7 @@ import {
 	HostRoot,
 	HostText
 } from './workTags';
-import { NoFlags } from './fiberFlags';
+import { NoFlags, Update } from './fiberFlags';
 //生成更新计划，计算和收集更新 flags
 export const completeWork = (workInProgress: FiberNode) => {
 	const newProps = workInProgress.pendingProps;
@@ -36,7 +36,8 @@ export const completeWork = (workInProgress: FiberNode) => {
 			return null;
 		case HostComponent:
 			if (current !== null && workInProgress.stateNode !== null) {
-				//TODO: 组件更新阶段
+				//组件更新阶段
+				updateHostComponent(current, workInProgress);
 			} else {
 				//首屏渲染阶段
 				//创建新的 DOM 元素, eg: document.createElement('div')
@@ -50,7 +51,8 @@ export const completeWork = (workInProgress: FiberNode) => {
 			return null;
 		case HostText:
 			if (current !== null && workInProgress.stateNode !== null) {
-				//TODO: 组件更新阶段
+				//组件更新阶段
+				updateHostText(current, workInProgress);
 			} else {
 				//首屏渲染阶段
 				//构建 DOM 元素
@@ -67,7 +69,21 @@ export const completeWork = (workInProgress: FiberNode) => {
 			return null;
 	}
 };
+function updateHostText(current: FiberNode, workInProgress: FiberNode) {
+	const oldText = current.memorizedProps.content;
+	const newText = workInProgress.pendingProps.content;
+	if (oldText !== newText) {
+		markUpdate(workInProgress);
+	}
+}
+function updateHostComponent(current: FiberNode, workInProgress: FiberNode) {
+	markUpdate(workInProgress);
+}
 
+//为 Fiber 节点添加 Update Flags
+function markUpdate(workInProgress: FiberNode) {
+	workInProgress.flags |= Update;
+}
 //appendAllChildren 函数负责递归的将组件的子节点添加到指定的 parent 中，通过深度优先遍历遍历 workInProgress 的子节点链表, 处理每个子节点的类型
 //先处理当前节点的所有子节点，再处理兄弟节点
 //如果为原生 DOM 元素节点或者文本节点，则将其添加到父节点中

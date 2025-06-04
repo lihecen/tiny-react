@@ -14,6 +14,7 @@ import {
 	addQueueUpdate,
 	createUpdate,
 	createUpdateQueue,
+	processUpdateQueue,
 	updateQueue
 } from './updateQueue';
 import { Action } from 'shared/ReactTypes';
@@ -22,6 +23,7 @@ import { scheduleUpdateOnFiber } from './workLoop';
 let currentlyRenderingFiber: FiberNode | null = null;
 //hooks 链表中当前正在处理的 hook
 let workInProgressHook: Hook | null = null;
+let currentHook: Hook | null = null;
 //当前使用的 hook 指针，根据初始渲染/更新渲染阶段不同进行赋值
 const { currentDispatcher } = internals;
 //定义 hook 数据结构
@@ -43,7 +45,7 @@ export function renderWithHooks(workInProgress: FiberNode) {
 	if (current !== null) {
 		//组件的更新阶段
 		//update
-		//currentDispatcher.current = HooksDispatcherOnUpdate;
+		currentDispatcher.current = HooksDispatcherOnUpdate;
 	} else {
 		//首屏渲染阶段
 		//mount
@@ -62,10 +64,9 @@ export function renderWithHooks(workInProgress: FiberNode) {
 const HooksDispatcherOnMount: Dispatcher = {
 	useState: mountState
 };
-//const HooksDispatcherOnUpdate: Dispatcher = {
-//	useState: updateState
-//};
-
+const HooksDispatcherOnUpdate: Dispatcher = {
+	useState: updateState
+};
 //实现 mountState
 //1: 从 hooks 链表中获取正在工作的 hook
 //2: 获取当前 hook 对应的 hook 数据, 即 mountState
@@ -106,13 +107,13 @@ function mountState<State>(
 	//当前 useState 对应两种 hook 数据
 	//const [data, setData] = useState(0)
 	//const [data, setData] = useState(data => data + 1)
-	let memoizedState;
+	let memorizedState;
 	if (initialState instanceof Function) {
-		memoizedState = initialState();
+		memorizedState = initialState();
 	} else {
-		memoizedState = initialState;
+		memorizedState = initialState;
 	}
-	hook.memorizedState = memoizedState;
+	hook.memorizedState = memorizedState;
 	//创建 updateQueue 实例
 	const queue = createUpdateQueue<State>();
 	hook.queue = queue;
@@ -120,7 +121,7 @@ function mountState<State>(
 	//@ts-expect-error
 	const dispatch = dispatchSetState.bind(null, currentlyRenderingFiber, queue);
 	queue.dispatch = dispatch;
-	return [memoizedState, dispatch];
+	return [memorizedState, dispatch];
 }
 //用于触发状态更新的逻辑
 function dispatchSetState<State>(
@@ -134,4 +135,69 @@ function dispatchSetState<State>(
 	addQueueUpdate(updateQueue, update);
 	//调度更新
 	scheduleUpdateOnFiber(fiber);
+}
+function updateState<State>(): [State, Dispatch<State>] {
+	//开发环境
+	if (__DEV__) {
+		console.log('updateState 开始');
+	}
+	//获取当前正在工作的 useState
+	const hook = updateWorkInProgressHook();
+	//计算新 State 的逻辑
+	const queue = hook.queue as updateQueue<State>;
+	//获取所有待处理的更新
+	const pending = queue.shared.pending;
+	//如果队列中有更新
+	if (pending !== null) {
+		const { memorizedState } = processUpdateQueue(hook.memorizedState, pending);
+		hook.memorizedState = memorizedState;
+	}
+	return [hook.memorizedState, queue.dispatch as Dispatch<State>];
+}
+function updateWorkInProgressHook(): Hook {
+	//保存链表中的下一个 hook
+	let nextCurrentHook: Hook | null;
+	if (currentHook === null) {
+		//组件 update 时第一个 hook
+		const current = (currentlyRenderingFiber as FiberNode).alternate;
+		if (current === null) {
+			nextCurrentHook = null;
+		} else {
+			nextCurrentHook = current.memorizedState;
+		}
+	} else {
+		//组件 update 时后续的 hook
+		nextCurrentHook = currentHook.next;
+	}
+	if (nextCurrentHook === null) {
+		throw new Error(
+			`组件 ${currentlyRenderingFiber?.type} 本次执行时的 hooks 比上次执行多`
+		);
+	}
+	//更新 currentHook
+	currentHook = nextCurrentHook as Hook;
+	//创建一个新的 hook 对象
+	//只复制旧 hook 的 state 和更新队列
+	const newHook: Hook = {
+		memorizedState: currentHook.memorizedState,
+		queue: currentHook.queue,
+		next: null
+	};
+	if (workInProgressHook === null) {
+		//update 时的第一个 hook
+		if (currentlyRenderingFiber !== null) {
+			workInProgressHook = newHook;
+			currentlyRenderingFiber.memorizedState = workInProgressHook;
+		} else {
+			//否则代表 hook 执行的上下文不是一个函数组件
+			throw new Error('hooks 只能在函数组件中执行');
+		}
+	} else {
+		//update 时其他的 hook
+		//将当前处理的 hook.next 指向新建的 hook, 形成 hooks 链表
+		workInProgressHook.next = newHook;
+		//更新处理当前的 hook
+		workInProgressHook = newHook;
+	}
+	return workInProgressHook;
 }

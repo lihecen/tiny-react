@@ -3,7 +3,7 @@
 // packages/react-dom/scr/hostConfig.ts
 export type Container = Element;
 export type Instance = Element;
-
+export type TextInstance = Text;
 export const createInstance = (type: string, props: any): Instance => {
 	// TODO: 处理 props
 	const element = document.createElement(type);
@@ -27,4 +27,11 @@ export const appendChildToContainer = (
 	parent: Instance | Container
 ) => {
 	parent.appendChild(child);
+};
+
+export const removeChild = (
+	child: Instance | TextInstance,
+	container: Container
+) => {
+	container.removeChild(child);
 };
